@@ -22,6 +22,20 @@ streamlit run app.py
 
 The app opens at http://localhost:8501
 
+If your browser does not open automatically, open it manually or use this macOS one-liner:
+
+```bash
+open http://localhost:8501
+```
+
+For a combined startup + open command (macOS/Linux):
+
+```bash
+streamlit run app.py --server.port 8501 &
+sleep 2
+open http://localhost:8501
+```
+
 ---
 
 ## Setup Checklist
