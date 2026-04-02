@@ -230,7 +230,7 @@ def fetch_news(api_key: str, region: str, category: str = "general") -> list:
     if not api_key:
         return []
 
-    from_date = (datetime.utcnow() - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    from_date = (datetime.now(datetime.UTC) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # Build query
     if category == "sports":
@@ -301,7 +301,7 @@ def format_published_date(iso_str: str) -> str:
 
 
 def build_html_email(region: str, headlines: list, sports: list, is_test: bool = False) -> str:
-    today = datetime.utcnow().strftime("%A, %B %d, %Y")
+    today = datetime.now(datetime.UTC).strftime("%A, %B %d, %Y")
     test_banner = """
     <div style="background:#b45309;color:#fff;text-align:center;padding:8px 16px;
                 font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:.05em;">
@@ -394,7 +394,7 @@ def build_html_email(region: str, headlines: list, sports: list, is_test: bool =
 
 
 def build_plain_text_email(region: str, headlines: list, sports: list, is_test: bool = False) -> str:
-    today = datetime.utcnow().strftime("%A, %B %d, %Y")
+    today = datetime.now(datetime.UTC).strftime("%A, %B %d, %Y")
     lines = []
     if is_test:
         lines.append("*** TEST EMAIL — Not a scheduled send ***\n")
@@ -433,7 +433,7 @@ def build_plain_text_email(region: str, headlines: list, sports: list, is_test: 
 
 def send_email(cfg: dict, region: str, headlines: list, sports: list, is_test: bool = False) -> dict:
     """Send digest email to both recipients. Returns result dict."""
-    today_str = datetime.utcnow().strftime("%A, %B %d, %Y")
+    today_str = datetime.now(datetime.UTC).strftime("%A, %B %d, %Y")
     prefix = "[TEST] " if is_test else ""
     subject = f"{prefix}Your {region} News Digest — Tuesday, {today_str}"
 
@@ -473,8 +473,8 @@ def send_email(cfg: dict, region: str, headlines: list, sports: list, is_test: b
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def log_event(message: str):
-    log_file = LOGS_DIR / f"digest_{datetime.utcnow().strftime('%Y%m')}.log"
-    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    log_file = LOGS_DIR / f"digest_{datetime.now(datetime.UTC).strftime('%Y%m')}.log"
+    timestamp = datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
     with open(log_file, "a") as f:
         f.write(f"[{timestamp}] {message}\n")
 
@@ -485,7 +485,7 @@ def log_event(message: str):
 
 def should_send_today(cfg: dict) -> bool:
     """Return True if it's Tuesday and we haven't sent today."""
-    now = datetime.utcnow()
+    now = datetime.now(datetime.UTC)
     if now.weekday() != 1:  # 1 = Tuesday
         return False
     if cfg.get("paused"):
@@ -499,7 +499,7 @@ def is_send_time_now(cfg: dict) -> bool:
     """Check if current UTC time is within 15 minutes of configured send time."""
     try:
         h, m = map(int, cfg.get("send_time", "07:00").split(":"))
-        now = datetime.utcnow()
+        now = datetime.now(datetime.UTC)
         scheduled = now.replace(hour=h, minute=m, second=0, microsecond=0)
         diff = abs((now - scheduled).total_seconds())
         return diff <= 900  # 15-minute window (FR-01 AC1)
@@ -517,7 +517,7 @@ def run_digest(cfg: dict, is_test: bool = False) -> dict:
     if not cfg.get("smtp_user") or not cfg.get("smtp_password"):
         return {"ok": False, "error": "SMTP credentials not configured."}
 
-    start_time = datetime.utcnow()
+    start_time = datetime.now(datetime.UTC)
     log_event(f"{'TEST ' if is_test else ''}Digest run started for region: {region}")
 
     # Fetch with retry (FR-01 AC3)
@@ -531,7 +531,7 @@ def run_digest(cfg: dict, is_test: bool = False) -> dict:
             time.sleep(5)
 
     send_result = send_email(cfg, region, headlines, sports, is_test)
-    end_time = datetime.utcnow()
+    end_time = datetime.now(datetime.UTC)
     duration = (end_time - start_time).total_seconds()
 
     ok = len(send_result["success"]) > 0
@@ -618,7 +618,7 @@ def main():
         st.markdown("### Weekly Regional News Digest")
         st.caption("Automated Tuesday email delivery · nictipoff@gmail.com · mdk32366@gmail.com")
     with col_status:
-        now = datetime.utcnow()
+        now = datetime.now(datetime.UTC)
         days_until_tuesday = (1 - now.weekday()) % 7
         next_tue = (now + timedelta(days=days_until_tuesday)).strftime("%b %d")
         paused_badge = "🔴 PAUSED" if cfg.get("paused") else "🟢 ACTIVE"
@@ -887,7 +887,7 @@ def main():
             st.download_button(
                 "⬇️  Export History as CSV",
                 data=csv_data,
-                file_name=f"digest_history_{datetime.utcnow().strftime('%Y%m%d')}.csv",
+                file_name=f"digest_history_{datetime.now(datetime.UTC).strftime('%Y%m%d')}.csv",
                 mime="text/csv",
             )
 
